@@ -3,7 +3,7 @@ const VIDEO_HEIGHT = 480;
 const OPEN_THRESHOLD = 0.12;
 const CLOSED_THRESHOLD = 0.065;
 const ARMING_MS = 750;
-const STABLE_MS = 900;
+const STABLE_MS = 850;
 const CORRECT_EFFECT_MS = 3000;
 const WRONG_PAUSE_MS = 1200;
 
@@ -45,7 +45,7 @@ function preload() {
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  textFont('"Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif');
+  textFont("Microsoft JhengHei");
   textWrap(WORD);
 
   video = createCapture(VIDEO);
@@ -60,9 +60,9 @@ function setup() {
 function draw() {
   background(7, 16, 14);
   drawCameraBackground();
+  drawFaceMesh();
 
   const detection = getMouthDetection();
-  drawFaceMesh();
 
   if (gameState === "landing") {
     drawLandingPage(detection);
@@ -70,8 +70,8 @@ function draw() {
   }
 
   updateGame(detection.gesture);
-  drawDimLayer(86);
-  drawHud(detection);
+  drawDimLayer(28);
+  drawGameTopBar(detection);
   updateParticles();
 
   if (gameState === "correct") {
@@ -224,7 +224,7 @@ function drawFaceMesh() {
     return;
   }
 
-  stroke(119, 255, 214, 72);
+  stroke(119, 255, 214, 82);
   strokeWeight(1);
   noFill();
 
@@ -251,8 +251,8 @@ function drawFaceMesh() {
     }
 
     const isMouthPoint = [13, 14, 61, 291].includes(i);
-    fill(isMouthPoint ? color(255, 214, 102) : color(166, 255, 235, 150));
-    circle(point.x, point.y, isMouthPoint ? 7 : 3);
+    fill(isMouthPoint ? color(255, 214, 102) : color(166, 255, 235, 155));
+    circle(point.x, point.y, isMouthPoint ? 8 : 3.2);
   }
 }
 
@@ -263,153 +263,222 @@ function drawDimLayer(alpha = 96) {
 }
 
 function drawLandingPage(detection) {
-  drawDimLayer(134);
+  drawLandingShade();
 
-  const left = max(24, width * 0.07);
-  const centerY = height * 0.42;
-  const titleSize = constrain(width * 0.07, 38, 82);
+  const left = max(28, width * 0.07);
+  const top = max(64, height * 0.16);
+  const titleSize = constrain(width * 0.078, 48, 96);
+  const buttonW = min(290, width - left * 2);
+  const buttonH = 72;
+  const buttonY = min(height - 132, top + titleSize * 2.32);
 
   startButton = {
     x: left,
-    y: centerY + 142,
-    w: min(230, width - left * 2),
-    h: 58
+    y: buttonY,
+    w: buttonW,
+    h: buttonH
   };
+
+  drawLandingAccent(left, top);
 
   fill(255, 214, 102);
   textAlign(LEFT, CENTER);
-  textSize(18);
-  text("p5.js + ml5.js FaceMesh", left, centerY - 118);
+  textSize(constrain(width * 0.02, 18, 26));
+  text("FaceMesh 口型答題挑戰", left, top - 32);
 
   fill(247, 251, 244);
   textSize(titleSize);
-  text("台灣常識\n快問快答", left, centerY - 24);
+  textLeading(titleSize * 1.04);
+  drawShadowText("台灣常識\n快問快答", left, top + titleSize * 0.72);
 
-  fill(201, 221, 216);
-  textSize(constrain(width * 0.026, 18, 27));
-  text("張嘴 YES，閉嘴 NO", left, centerY + 92);
+  fill(219, 232, 227);
+  textSize(constrain(width * 0.026, 22, 34));
+  text("10 題是非題，開口作答", left, top + titleSize * 2.06);
 
   const hovering = isInsideButton(mouseX, mouseY, startButton);
   cursor(hovering ? HAND : ARROW);
-  fill(hovering ? color(255, 232, 143) : color(255, 214, 102));
-  rect(startButton.x, startButton.y, startButton.w, startButton.h, 8);
+  drawStartButton(startButton, hovering);
 
-  fill(8, 18, 16);
-  textSize(22);
-  textAlign(CENTER, CENTER);
-  text("開始遊戲", startButton.x + startButton.w / 2, startButton.y + startButton.h / 2);
-
-  fill(201, 221, 216);
-  textSize(16);
-  textAlign(LEFT, CENTER);
-  const status = detection.hasFace ? "FaceMesh 已就緒" : "請允許鏡頭並面向畫面";
-  text(status, left, startButton.y + startButton.h + 34);
+  drawLandingStatus(left, startButton.y + startButton.h + 36, detection);
 }
 
-function drawHud(detection) {
+function drawLandingShade() {
+  noStroke();
+  fill(7, 16, 14, 112);
+  rect(0, 0, width, height);
+
+  for (let i = 0; i < 8; i += 1) {
+    fill(7, 16, 14, 22 - i * 2);
+    rect(i * width * 0.055, 0, width * 0.11, height);
+  }
+}
+
+function drawLandingAccent(left, top) {
+  stroke(255, 214, 102, 220);
+  strokeWeight(4);
+  line(left, top - 74, left + 96, top - 74);
+
+  stroke(116, 236, 199, 150);
+  strokeWeight(2);
+  line(left, top - 62, left + 184, top - 62);
+}
+
+function drawShadowText(value, x, y) {
+  fill(3, 8, 7, 120);
+  text(value, x + 4, y + 5);
+  fill(247, 251, 244);
+  text(value, x, y);
+}
+
+function drawStartButton(button, hovering) {
+  noStroke();
+  fill(hovering ? color(255, 232, 143) : color(255, 214, 102));
+  rect(button.x, button.y, button.w, button.h, 8);
+
+  fill(8, 18, 16);
+  textAlign(CENTER, CENTER);
+  textSize(23);
+  text("開始遊戲", button.x + button.w / 2, button.y + button.h / 2);
+}
+
+function drawLandingStatus(x, y, detection) {
+  const status = detection.hasFace ? "FaceMesh 已就緒" : "請允許鏡頭並面向畫面";
+
+  fill(8, 18, 16, 176);
+  noStroke();
+  rect(x, y - 24, min(420, width - x * 2), 50, 8);
+
+  fill(detection.hasFace ? color(116, 236, 199) : color(255, 214, 102));
+  circle(x + 24, y, 11);
+
+  fill(235, 244, 240);
+  textAlign(LEFT, CENTER);
+  textSize(20);
+  text(status, x + 44, y);
+}
+
+function drawGameTopBar(detection) {
   if (gameState === "done") {
     return;
   }
 
   cursor(ARROW);
-  const pad = min(width, height) * 0.035;
-  const topHeight = 68;
 
-  noStroke();
-  fill(8, 18, 16, 180);
-  rect(0, 0, width, topHeight);
-
-  fill(247, 251, 244);
-  textSize(20);
-  textAlign(LEFT, CENTER);
-  text(`第 ${questionIndex + 1} / ${questions.length} 題`, pad, topHeight / 2);
-
-  textAlign(RIGHT, CENTER);
-  text(`答對 ${correctCount}  重答 ${wrongCount}`, width - pad, topHeight / 2);
-
-  drawQuestionPanel(detection);
-}
-
-function drawQuestionPanel(detection) {
-  const pad = min(width, height) * 0.035;
-  const panelW = min(width - pad * 2, 540);
-  const panelH = min(height - 110, 350);
+  const compact = width < 760;
+  const pad = max(14, min(width, height) * 0.024);
   const x = pad;
-  const y = 88;
+  const y = pad;
+  const panelW = width - pad * 2;
+  const panelH = compact ? constrain(height * 0.29, 236, 270) : constrain(height * 0.19, 168, 198);
   const current = questions[questionIndex];
 
   noStroke();
-  fill(8, 18, 16, 210);
+  fill(8, 18, 16, 205);
   rect(x, y, panelW, panelH, 8);
 
-  fill(255, 214, 102);
-  textAlign(LEFT, CENTER);
-  textSize(fitTextSize("請作答", panelW - 44, 36, 24));
-  text("請作答", x + 22, y + 44);
+  stroke(255, 214, 102, 210);
+  strokeWeight(3);
+  line(x + 18, y + panelH - 2, x + min(panelW - 18, 180), y + panelH - 2);
 
-  fill(247, 251, 244);
-  textSize(fitTextSize(current.text, panelW - 44, 29, 20));
-  text(current.text, x + 22, y + 88, panelW - 44, 98);
+  drawTopMeta(x, y, panelW);
+  drawPromptAndQuestion(x, y, panelW, panelH, compact, current.text);
 
   if (gameState === "wrongPause") {
-    fill(255, 118, 96);
-    textSize(fitTextSize("答錯了，再答一次", panelW - 44, 28, 20));
-    text("答錯了，再答一次", x + 22, y + panelH - 96, panelW - 44, 48);
-  } else {
-    drawGestureStatus(detection, x, y, panelW, panelH);
-  }
-}
-
-function drawGestureStatus(detection, x, y, panelW, panelH) {
-  const yesActive = detection.gesture === "YES";
-  const noActive = detection.gesture === "NO";
-  const choiceY = y + panelH - 128;
-  const leftChoice = x + panelW * 0.28;
-  const rightChoice = x + panelW * 0.72;
-
-  drawChoicePill(leftChoice, choiceY, "YES", "張嘴", yesActive);
-  drawChoicePill(rightChoice, choiceY, "NO", "閉嘴", noActive);
-
-  const statusY = y + panelH - 50;
-  fill(201, 221, 216);
-  textAlign(LEFT, CENTER);
-  textSize(16);
-
-  if (!detection.hasFace) {
-    text("找不到臉，請靠近鏡頭", x + 22, statusY);
+    drawWrongNotice(x, y, panelW, panelH);
     return;
   }
 
-  const label = detection.gesture ? `偵測：${detection.gesture}` : "偵測：準備中";
-  const progress = getHoldProgress();
-  text(`${label}  ${floor(progress * 100)}%`, x + 22, statusY);
+  drawGestureStatus(detection, x, y, panelW, panelH, compact);
+}
 
-  const barW = panelW - 44;
-  const barH = 7;
-  const barX = x + 22;
+function drawTopMeta(x, y, panelW) {
+  fill(202, 220, 215);
+  textSize(18);
+  textAlign(LEFT, CENTER);
+  text(`第 ${questionIndex + 1} / ${questions.length} 題`, x + 22, y + 28);
+
+  textAlign(RIGHT, CENTER);
+  text(`答對 ${correctCount}  重答 ${wrongCount}`, x + panelW - 22, y + 28);
+}
+
+function drawPromptAndQuestion(x, y, panelW, panelH, compact, questionText) {
+  const promptSize = compact ? 31 : 36;
+  const questionSize = compact ? 29 : 36;
+  const questionX = compact ? x + 22 : x + 168;
+  const questionY = compact ? y + 92 : y + 82;
+  const questionW = compact ? panelW - 44 : panelW - 540;
+  const questionH = compact ? 46 : 66;
+
+  fill(255, 214, 102);
+  textAlign(LEFT, CENTER);
+  textSize(promptSize);
+  text("請作答", x + 22, compact ? y + 66 : y + 82);
+
+  fill(247, 251, 244);
+  textSize(fitTextSize(questionText, questionW, questionSize, 23));
+  text(questionText, questionX, questionY, questionW, questionH);
+}
+
+function drawWrongNotice(x, y, panelW, panelH) {
+  fill(255, 118, 96);
+  textAlign(LEFT, CENTER);
+  textSize(26);
+  text("答錯了，再答一次", x + 22, y + panelH - 42, panelW - 44, 44);
+}
+
+function drawGestureStatus(detection, x, y, panelW, panelH, compact) {
+  const yesActive = detection.gesture === "YES";
+  const noActive = detection.gesture === "NO";
+  const progress = getHoldProgress();
+  const choiceY = compact ? y + 172 : y + 92;
+  const noX = compact ? x + 230 : x + panelW - 92;
+  const yesX = compact ? x + 92 : noX - 150;
+
+  drawChoicePill(yesX, choiceY, "YES", "張嘴", yesActive);
+  drawChoicePill(noX, choiceY, "NO", "閉嘴", noActive);
+
+  const statusText = getGestureStatusText(detection, progress);
+  const statusX = compact ? x + 22 : x + panelW - 332;
+  const statusY = y + panelH - 42;
+  const barX = compact ? x + 22 : x + panelW - 332;
+  const barW = compact ? panelW - 44 : 310;
   const barY = statusY + 22;
 
+  fill(220, 235, 230);
+  textAlign(LEFT, CENTER);
+  textSize(18);
+  text(statusText, statusX, statusY);
+
   noStroke();
-  fill(49, 71, 66, 230);
-  rect(barX, barY, barW, barH, barH / 2);
+  fill(44, 68, 62, 240);
+  rect(barX, barY, barW, 8, 4);
   fill(detection.gesture === "YES" ? color(255, 214, 102) : color(116, 236, 199));
-  rect(barX, barY, barW * progress, barH, barH / 2);
+  rect(barX, barY, barW * progress, 8, 4);
+}
+
+function getGestureStatusText(detection, progress) {
+  if (!detection.hasFace) {
+    return "找不到臉，請靠近鏡頭";
+  }
+
+  const label = detection.gesture ? `偵測：${detection.gesture}` : "偵測：準備中";
+  return `${label}  ${floor(progress * 100)}%`;
 }
 
 function drawChoicePill(cx, cy, mainLabel, subLabel, active) {
-  const w = min(160, width * 0.25);
-  const h = 66;
+  const w = 122;
+  const h = 58;
 
   noStroke();
-  fill(active ? color(255, 214, 102, 230) : color(18, 34, 31, 230));
+  fill(active ? color(255, 214, 102, 240) : color(18, 34, 31, 226));
   rect(cx - w / 2, cy - h / 2, w, h, 8);
 
   fill(active ? color(8, 18, 16) : color(247, 251, 244));
   textAlign(CENTER, CENTER);
-  textSize(23);
-  text(mainLabel, cx, cy - 10);
+  textSize(24);
+  text(mainLabel, cx, cy - 8);
   textSize(15);
-  text(subLabel, cx, cy + 17);
+  text(subLabel, cx, cy + 15);
 }
 
 function drawCorrectEffect() {
@@ -428,14 +497,14 @@ function drawCorrectEffect() {
   noStroke();
   fill(255, 214, 102);
   textAlign(CENTER, CENTER);
-  textSize(46 + 10 * pulse);
+  textSize(60 + 12 * pulse);
   text("答對了！", width / 2, height * 0.58);
 }
 
 function spawnCorrectParticles() {
   particles = [];
 
-  for (let i = 0; i < 96; i += 1) {
+  for (let i = 0; i < 110; i += 1) {
     const angle = random(TWO_PI);
     const speed = random(2.5, 8.5);
     particles.push({
@@ -443,7 +512,7 @@ function spawnCorrectParticles() {
       y: height / 2,
       vx: cos(angle) * speed,
       vy: sin(angle) * speed,
-      size: random(4, 10),
+      size: random(5, 12),
       life: random(70, 120),
       hue: random([0, 1, 2])
     });
@@ -479,27 +548,29 @@ function updateParticles() {
 }
 
 function drawDoneScreen() {
-  const panelW = min(width * 0.82, 720);
-  const panelH = min(height * 0.38, 290);
+  drawDimLayer(128);
+
+  const panelW = min(width * 0.82, 760);
+  const panelH = min(height * 0.42, 330);
   const x = (width - panelW) / 2;
   const y = (height - panelH) / 2;
 
   noStroke();
-  fill(8, 18, 16, 220);
+  fill(8, 18, 16, 224);
   rect(x, y, panelW, panelH, 8);
 
   fill(255, 214, 102);
   textAlign(CENTER, CENTER);
-  textSize(fitTextSize("完成！", panelW * 0.7, 48, 30));
-  text("完成！", width / 2, y + 65);
+  textSize(fitTextSize("完成！", panelW * 0.7, 62, 36));
+  text("完成！", width / 2, y + 76);
 
   fill(247, 251, 244);
-  textSize(26);
-  text(`10 題全答對，重答 ${wrongCount} 次`, width / 2, y + 132);
+  textSize(32);
+  text(`10 題全答對，重答 ${wrongCount} 次`, width / 2, y + 152);
 
   fill(201, 221, 216);
-  textSize(18);
-  text("按 R 重新開始", width / 2, y + 198);
+  textSize(22);
+  text("按 R 重新開始", width / 2, y + 228);
 }
 
 function getHoldProgress() {
